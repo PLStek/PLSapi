@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -12,19 +12,18 @@ class Charbon(Base):
     datetime = Column(Integer)
     duration = Column(Integer)
     course_id = Column(String, ForeignKey("course.id"))
+    replay_link = Column(String)
+
     actionneurs = relationship("CharbonHost", back_populates="charbon")
+    course = relationship("Course", back_populates="charbons")
 
 
 class Course(Base):
     __tablename__ = "course"
     id = Column(String, primary_key=True, index=True)
-    type_id = Column(Integer, ForeignKey("course_type.id"))
+    type = Column(Enum("meca", "info", "elec", "math"))
 
-
-class CourseType(Base):
-    __tablename__ = "course_type"
-    id = Column(Integer, primary_key=True, index=True)
-    type = Column(String)
+    charbons = relationship("Charbon", back_populates="course")
 
 
 class CharbonHost(Base):
