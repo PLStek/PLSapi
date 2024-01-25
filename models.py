@@ -28,7 +28,12 @@ class Course(Base):
 
 class CharbonHost(Base):
     __tablename__ = "charbon_host"
-    charbon_id = Column(Integer, ForeignKey("charbon.id"), primary_key=True, index=True)
+    charbon_id = Column(
+        Integer,
+        ForeignKey("charbon.id"),
+        primary_key=True,
+        index=True,
+    )
     actionneur_id = Column(Integer, ForeignKey("user.id"), primary_key=True, index=True)
 
     charbon = relationship("Charbon", back_populates="actionneurs")

@@ -48,13 +48,32 @@ def get_charbon_by_id(id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
 def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
-    video_id = extract_video_id_from_url(charbon.replay_link)
-    duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
+    charbon_dump = charbon.model_dump()
+    if "actionneurs" in charbon_dump:
+        del charbon_dump["actionneurs"]
+    new_charbon = models.Charbon(**charbon_dump)
 
-    new_charbon = models.Charbon(**charbon.model_dump())
-    new_charbon.duration = duration
+    if charbon.replay_link:
+        video_id = extract_video_id_from_url(charbon.replay_link)
+        duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
+        if duration is None:
+            raise HTTPException(
+                status_code=400, detail="Could not extract duration from video"
+            )
+        new_charbon.duration = duration
+    else:
+        new_charbon.duration = None
 
     db.add(new_charbon)
+    db.flush()
+
+    actionneurs = [
+        models.CharbonHost(charbon_id=new_charbon.id, actionneur_id=actionneur)
+        for actionneur in charbon.actionneurs
+    ]
+
+    db.add_all(actionneurs)
+
     db.commit()
 
     inserted_charbon = (
@@ -64,16 +83,39 @@ def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
     return _transform_charbon(inserted_charbon)
 
 
-@router.put("/{id}")
+@router.put("/{id}", response_model=schemas.Charbon)
 def update_charbon(
     id: int, charbon: schemas.CharbonCreate, db: Session = Depends(get_db)
 ):
-    db.query(models.Charbon).filter(models.Charbon.id == id).update(
-        charbon.model_dump()
-    )
+    new_charbon = charbon.model_dump()
+    if "actionneurs" in new_charbon:
+        del new_charbon["actionneurs"]
+
+    if charbon.replay_link:
+        video_id = extract_video_id_from_url(charbon.replay_link)
+        duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
+        if duration is None:
+            raise HTTPException(
+                status_code=400, detail="Could not extract duration from video"
+            )
+        new_charbon["duration"] = duration
+    else:
+        new_charbon.duration = None
+
+    db.query(models.Charbon).filter(models.Charbon.id == id).update(new_charbon)
+
+    db.query(models.CharbonHost).filter(models.CharbonHost.charbon_id == id).delete()
+    actionneurs = [
+        models.CharbonHost(charbon_id=id, actionneur_id=actionneur)
+        for actionneur in charbon.actionneurs
+    ]
+    db.add_all(actionneurs)
+
     db.commit()
 
-    return db.query(models.Charbon).filter(models.Charbon.id == id).first()
+    inserted_charbon = _get_charbon_query(db).filter(models.Charbon.id == id).first()
+
+    return _transform_charbon(inserted_charbon)
 
 
 @router.delete("/{id}")

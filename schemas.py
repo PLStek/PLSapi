@@ -7,9 +7,9 @@ class CharbonBase(BaseModel):
     title: str
     description: str
     datetime: int
-    duration: Optional[int]
     course_id: str
     replay_link: Optional[str]
+    actionneurs: List[int]
 
 
 class CharbonCreate(CharbonBase):
@@ -19,7 +19,7 @@ class CharbonCreate(CharbonBase):
 class Charbon(CharbonBase):
     id: int
     course_type: str
-    actionneurs: List[int]
+    duration: Optional[int]
 
     class Config:
         orm_mode = True
