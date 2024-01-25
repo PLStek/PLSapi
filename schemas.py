@@ -48,3 +48,20 @@ class Announcement(AnnouncementBase):
 
     class Config:
         orm_mode = True
+
+
+class ExerciseTopicBase(BaseModel):
+    topic: str
+    course_id: str
+
+
+class ExerciseTopicCreate(ExerciseTopicBase):
+    pass
+
+
+class ExerciseTopic(ExerciseTopicBase):
+    course_type: str
+    id: int
+
+    class Config:
+        orm_mode = True

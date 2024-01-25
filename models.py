@@ -57,3 +57,12 @@ class Announcement(Base):
     title = Column(String)
     content = Column(String)
     datetime = Column(Integer)
+
+
+class ExerciseTopic(Base):
+    __tablename__ = "exercise_topic"
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String)
+    course_id = Column(String, ForeignKey("course.id"))
+
+    course = relationship("Course", back_populates="exercise_topics")
