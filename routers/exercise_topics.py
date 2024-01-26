@@ -46,4 +46,22 @@ def add_exercise_topic(et: schemas.ExerciseTopicCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(new_et)
 
-    return new_et
+    return get_exercise_topic(new_et.id, db)
+
+
+@router.put("/{id}")
+def update_exercise_topic(
+    id: int, et: schemas.ExerciseTopicCreate, db: Session = Depends(get_db)
+):
+    db.query(models.ExerciseTopic).filter_by(id=id).update(et.model_dump())
+    db.commit()
+
+    return get_exercise_topic(id, db)
+
+
+@router.delete("/{id}")
+def delete_exercise_topic(id: int, db: Session = Depends(get_db)):
+    db.query(models.ExerciseTopic).filter_by(id=id).delete()
+    db.commit()
+
+    return {}
