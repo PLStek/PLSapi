@@ -24,6 +24,7 @@ class Course(Base):
     type = Column(Enum("meca", "info", "elec", "math"))
 
     charbons = relationship("Charbon", back_populates="course")
+    exercise_topics = relationship("ExerciseTopic", back_populates="course")
 
 
 class CharbonHost(Base):
