@@ -18,32 +18,31 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
         actionneur.actionneur.id for actionneur in charbon.actionneurs
     ]
     charbon_dict["course_type"] = charbon.course.type
+    del charbon_dict["course"]
     return charbon_dict
 
 
 def _get_charbon_query(db: Session):
-    return (
-        db.query(models.Charbon)
-        .options(joinedload(models.Charbon.actionneurs))
-        .join(models.Course, models.Charbon.course_id == models.Course.id)
+    return db.query(models.Charbon).options(
+        joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
     )
 
 
 @router.get("/", response_model=List[schemas.Charbon])
 def get_charbons(db: Session = Depends(get_db)):
-    query = _get_charbon_query(db).all()
-
-    return [_transform_charbon(charbon) for charbon in query]
+    query = _get_charbon_query(db)
+    charbons = [_transform_charbon(charbon) for charbon in query.all()]
+    return charbons
 
 
 @router.get("/{id}", response_model=schemas.Charbon)
 def get_charbon_by_id(id: int, db: Session = Depends(get_db)):
-    query = _get_charbon_query(db).filter(models.Charbon.id == id).first()
-
-    if not query:
+    query = _get_charbon_query(db).filter_by(id=id)
+    charbon = _transform_charbon(query.first())
+    if not charbon:
         raise HTTPException(status_code=404, detail="Charbon not found")
 
-    return _transform_charbon(query)
+    return charbon
 
 
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
