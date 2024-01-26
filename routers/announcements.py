@@ -18,7 +18,7 @@ def get_announcements(db: Session = Depends(get_db)):
 
 @router.get("/{id}", response_model=schemas.Announcement)
 def get_announcement(id: int, db: Session = Depends(get_db)):
-    query = db.query(models.Announcement).filter(models.Announcement.id == id).first()
+    query = db.query(models.Announcement).filter_by(id=id).first()
 
     return query
 
@@ -39,17 +39,15 @@ def add_announcement(
 def update_announcement(
     id: int, announcement: schemas.AnnouncementCreate, db: Session = Depends(get_db)
 ):
-    db.query(models.Announcement).filter(models.Announcement.id == id).update(
-        announcement.model_dump()
-    )
+    db.query(models.Announcement).filter_by(id=id).update(announcement.model_dump())
     db.commit()
 
-    return db.query(models.Announcement).filter(models.Announcement.id == id).first()
+    return db.query(models.Announcement).filter_by(id=id).first()
 
 
 @router.delete("/{id}")
 def delete_announcement(id: int, db: Session = Depends(get_db)):
-    db.query(models.Announcement).filter(models.Announcement.id == id).delete()
+    db.query(models.Announcement).filter_by(id=id).delete()
     db.commit()
 
     return {}

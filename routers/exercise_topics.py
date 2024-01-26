@@ -30,7 +30,7 @@ def get_exercise_topic(id: int, db: Session = Depends(get_db)):
     query = (
         db.query(models.ExerciseTopic)
         .options(selectinload(models.ExerciseTopic.course))
-        .filter(models.ExerciseTopic.id == id)
+        .filter_by(id=id)
     )
     et = _transform_et(query.first())
     if not et:
