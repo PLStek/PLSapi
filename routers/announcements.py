@@ -32,7 +32,7 @@ def add_announcement(
     db.commit()
     db.refresh(new_announcement)
 
-    return new_announcement
+    return get_announcement(new_announcement.id, db)
 
 
 @router.put("/{id}")
@@ -42,7 +42,7 @@ def update_announcement(
     db.query(models.Announcement).filter_by(id=id).update(announcement.model_dump())
     db.commit()
 
-    return db.query(models.Announcement).filter_by(id=id).first()
+    return get_announcement(id, db)
 
 
 @router.delete("/{id}")

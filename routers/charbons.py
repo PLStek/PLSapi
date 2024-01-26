@@ -36,7 +36,7 @@ def get_charbons(db: Session = Depends(get_db)):
 
 
 @router.get("/{id}", response_model=schemas.Charbon)
-def get_charbon_by_id(id: int, db: Session = Depends(get_db)):
+def get_charbon(id: int, db: Session = Depends(get_db)):
     query = _get_charbon_query(db).filter_by(id=id)
     charbon = _transform_charbon(query.first())
     if not charbon:
@@ -65,19 +65,14 @@ def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
 
     db.add(new_charbon)
     db.flush()
-
     actionneurs = [
         models.CharbonHost(charbon_id=new_charbon.id, actionneur_id=actionneur)
         for actionneur in charbon.actionneurs
     ]
-
     db.add_all(actionneurs)
-
     db.commit()
 
-    inserted_charbon = _get_charbon_query(db).filter_by(id=new_charbon.id).first()
-
-    return _transform_charbon(inserted_charbon)
+    return get_charbon(new_charbon.id, db)
 
 
 @router.put("/{id}", response_model=schemas.Charbon)
@@ -100,19 +95,15 @@ def update_charbon(
         new_charbon.duration = None
 
     db.query(models.Charbon).filter_by(id=id).update(new_charbon)
-
     db.query(models.CharbonHost).filter_by(charbon_id=id).delete()
     actionneurs = [
         models.CharbonHost(charbon_id=id, actionneur_id=actionneur)
         for actionneur in charbon.actionneurs
     ]
     db.add_all(actionneurs)
-
     db.commit()
 
-    inserted_charbon = _get_charbon_query(db).filter_by(id=id).first()
-
-    return _transform_charbon(inserted_charbon)
+    return get_charbon(id, db)
 
 
 @router.delete("/{id}")
