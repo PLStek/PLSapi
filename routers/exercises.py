@@ -11,6 +11,20 @@ from database import get_db
 
 router = APIRouter(prefix="/exercises")
 
+COMPILER_COMMAND = ["python3", "compile_plsmarkdown.py"]
+COMPILER_DIRECTORY = "compiler"
+
+
+def _compile_content(content: str) -> str:
+    process = subprocess.run(
+        COMPILER_COMMAND,
+        input=content.encode("utf-8"),
+        capture_output=True,
+        cwd=COMPILER_DIRECTORY,
+        check=True,
+    )
+    return process.stdout.decode("utf-8")
+
 
 @router.get("/", response_model=List[schemas.Exercise])
 def get_exercises(db: Session = Depends(get_db)):
@@ -34,26 +48,8 @@ def add_exercise(
     db: Session = Depends(get_db),
 ):
     new_exercise = models.Exercise(**exercise.model_dump())
-    process = subprocess.Popen(
-        [
-            "python3",
-            "compile_plsmarkdown.py",
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd="compiler",
-    )
-
-    stdout, stderr = process.communicate(input=exercise.content.encode("utf-8"))
-    if process.returncode == 0:
-        new_exercise.content = base64.b64encode(stdout)
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Could not compile exercise: {stderr.decode('utf-8')}",
-        )
-
+    compiled_content_bytes = _compile_content(exercise.content).encode("utf-8")
+    new_exercise.content = base64.b64encode(compiled_content_bytes)
     db.add(new_exercise)
     db.commit()
     db.refresh(new_exercise)
