@@ -25,10 +25,16 @@ class Charbon(CharbonBase):
         orm_mode = True
 
 
-class Course(BaseModel):
+class CourseBase(BaseModel):
     id: str
     type: str
 
+
+class CourseCreate(CourseBase):
+    pass
+
+
+class Course(CourseBase):
     class Config:
         orm_mode = True
 

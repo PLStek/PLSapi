@@ -18,7 +18,7 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
         actionneur.actionneur.id for actionneur in charbon.actionneurs
     ]
     charbon_dict["course_type"] = charbon.course.type
-    del charbon_dict["course"]
+    charbon_dict.pop("course", None)
     return charbon_dict
 
 
@@ -48,8 +48,7 @@ def get_charbon(id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
 def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
     charbon_dump = charbon.model_dump()
-    if "actionneurs" in charbon_dump:
-        del charbon_dump["actionneurs"]
+    charbon_dump.pop("actionneurs")
     new_charbon = models.Charbon(**charbon_dump)
 
     if charbon.replay_link:
@@ -80,8 +79,7 @@ def update_charbon(
     id: int, charbon: schemas.CharbonCreate, db: Session = Depends(get_db)
 ):
     new_charbon = charbon.model_dump()
-    if "actionneurs" in new_charbon:
-        del new_charbon["actionneurs"]
+    new_charbon.pop("actionneurs", None)
 
     if charbon.replay_link:
         video_id = extract_video_id_from_url(charbon.replay_link)
