@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, LargeBinary, String
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -67,3 +67,17 @@ class ExerciseTopic(Base):
     course_id = Column(String, ForeignKey("course.id"))
 
     course = relationship("Course", back_populates="exercise_topics")
+    exercises = relationship("Exercise", back_populates="topic")
+
+
+class Exercise(Base):
+    __tablename__ = "exercise"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    difficulty = Column(Integer)
+    is_corrected = Column(Boolean)
+    source = Column(String)
+    topic_id = Column(Integer, ForeignKey("exercise_topic.id"))
+    content = Column(LargeBinary)
+
+    topic = relationship("ExerciseTopic", back_populates="exercises")

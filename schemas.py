@@ -1,6 +1,7 @@
+import base64
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import Base64Str, BaseModel, validator
 
 
 class CharbonBase(BaseModel):
@@ -68,6 +69,28 @@ class ExerciseTopicCreate(ExerciseTopicBase):
 class ExerciseTopic(ExerciseTopicBase):
     course_type: str
     id: int
+
+    class Config:
+        orm_mode = True
+
+
+class ExerciseBase(BaseModel):
+    title: str
+    difficulty: int
+    is_corrected: bool
+    source: str
+    topic_id: int
+
+
+class ExerciseCreate(ExerciseBase):
+    content: Base64Str
+
+    pass
+
+
+class Exercise(ExerciseBase):
+    id: int
+    content: Optional[str]
 
     class Config:
         orm_mode = True
