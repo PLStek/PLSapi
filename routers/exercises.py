@@ -1,4 +1,5 @@
 import base64
+import subprocess
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -33,6 +34,26 @@ def add_exercise(
     db: Session = Depends(get_db),
 ):
     new_exercise = models.Exercise(**exercise.model_dump())
+    process = subprocess.Popen(
+        [
+            "python3",
+            "compile_plsmarkdown.py",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd="compiler",
+    )
+
+    stdout, stderr = process.communicate(input=exercise.content.encode("utf-8"))
+    if process.returncode == 0:
+        new_exercise.content = base64.b64encode(stdout)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not compile exercise: {stderr.decode('utf-8')}",
+        )
+
     db.add(new_exercise)
     db.commit()
     db.refresh(new_exercise)
