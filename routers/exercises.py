@@ -38,7 +38,6 @@ def get_exercise(id: int, db: Session = Depends(get_db)):
     exercise = query.first()
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
-    exercise.content = base64.b64decode(exercise.content).decode("utf-8")
     return exercise
 
 
@@ -54,3 +53,20 @@ def add_exercise(
     db.commit()
     db.refresh(new_exercise)
     return new_exercise
+
+
+@router.put("/{id}", response_model=schemas.Exercise)
+def update_exercise(
+    id: int,
+    exercise: schemas.ExerciseCreate,
+    db: Session = Depends(get_db),
+):
+    new_exercise = exercise.model_dump()
+    if exercise.content:
+        compiled_content_bytes = _compile_content(exercise.content).encode("utf-8")
+        new_exercise["content"] = base64.b64encode(compiled_content_bytes)
+
+    db.query(models.Exercise).filter_by(id=id).update(new_exercise)
+    db.commit()
+
+    return get_exercise(id, db)
