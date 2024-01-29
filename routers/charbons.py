@@ -22,22 +22,26 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
     return charbon_dict
 
 
-def _get_charbon_query(db: Session):
-    return db.query(models.Charbon).options(
+@router.get("/", response_model=List[schemas.Charbon])
+def get_charbons(limit: int = 10, offset: int = 0, course_type: str | None = None, course: str | None = None, db: Session = Depends(get_db)):
+    query = db.query(models.Charbon).join(models.Course).options(
         joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
     )
-
-
-@router.get("/", response_model=List[schemas.Charbon])
-def get_charbons(db: Session = Depends(get_db)):
-    query = _get_charbon_query(db)
+    if course_type:
+        query = query.filter(models.Course.type == course_type)
+    if course:
+        query = query.filter(models.Charbon.course_id == course)
+    query = query.offset(offset).limit(limit)
+    
     charbons = [_transform_charbon(charbon) for charbon in query.all()]
     return charbons
 
 
 @router.get("/{id}", response_model=schemas.Charbon)
 def get_charbon(id: int, db: Session = Depends(get_db)):
-    query = _get_charbon_query(db).filter_by(id=id)
+    query = db.query(models.Charbon).options(
+        joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
+    ).filter_by(id=id)
     charbon = _transform_charbon(query.first())
     if not charbon:
         raise HTTPException(status_code=404, detail="Charbon not found")
