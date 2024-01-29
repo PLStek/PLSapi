@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import models
 from database import engine
@@ -13,3 +14,15 @@ app.include_router(announcements.router)
 app.include_router(exercise_topics.router)
 app.include_router(courses.router)
 app.include_router(exercises.router)
+
+origins = [
+    "http://localhost:4200",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
