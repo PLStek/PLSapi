@@ -1,7 +1,15 @@
 import base64
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import Base64Str, BaseModel, validator
+
+class CourseType(str, Enum):
+    MECA = "meca"
+    ELEC = "elec"
+    INFO = "info"
+    MATH = "math"
+    
 
 
 class CharbonBase(BaseModel):
@@ -19,7 +27,7 @@ class CharbonCreate(CharbonBase):
 
 class Charbon(CharbonBase):
     id: int
-    course_type: str
+    course_type: CourseType
     duration: Optional[int]
 
     class Config:
@@ -67,7 +75,7 @@ class ExerciseTopicCreate(ExerciseTopicBase):
 
 
 class ExerciseTopic(ExerciseTopicBase):
-    course_type: str
+    course_type: CourseType
     id: int
 
     class Config:

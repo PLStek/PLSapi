@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,21 @@ from utils import extract_video_id_from_url, get_youtube_video_duration
 
 router = APIRouter(prefix="/charbons")
 
+class SortOptions(str, Enum):
+    DATE_ASC = "date_asc"
+    DATE_DESC = "date_desc"
+    DURATION_ASC = "duration_asc"
+    DURATION_DESC = "duration_desc"
+    
+    def get_sort_option(self):
+        options = {
+            SortOptions.DATE_ASC: models.Charbon.datetime.asc(),
+            SortOptions.DATE_DESC: models.Charbon.datetime.desc(),
+            SortOptions.DURATION_ASC: models.Charbon.duration.asc(),
+            SortOptions.DURATION_DESC: models.Charbon.duration.desc(),
+        }
+        return options.get(self, models.Charbon.datetime.desc())
+
 
 def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
     charbon_dict: Dict[str, Any] = charbon.__dict__
@@ -23,10 +39,11 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
 
 
 @router.get("/", response_model=List[schemas.Charbon])
-def get_charbons(limit: int = 10, offset: int = 0, course_type: str | None = None, course: str | None = None, db: Session = Depends(get_db)):
+def get_charbons(limit: int = 10, offset: int = 0, course_type: Optional[schemas.CourseType] = None, course: str | None = None, sort: Optional[SortOptions] = SortOptions.DATE_DESC, db: Session = Depends(get_db)):
+    
     query = db.query(models.Charbon).join(models.Course).options(
         joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
-    )
+    ).order_by(sort.get_sort_option())
     if course_type:
         query = query.filter(models.Course.type == course_type)
     if course:
