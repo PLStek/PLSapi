@@ -46,8 +46,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String)
     email = Column(String)
-    actionneur = Column(Boolean)
-    admin = Column(Boolean)
+    is_actionneur = Column(Boolean)
+    is_admin = Column(Boolean)
 
     charbons = relationship("CharbonHost", back_populates="actionneur")
 

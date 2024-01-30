@@ -4,12 +4,12 @@ from typing import List, Optional
 
 from pydantic import Base64Str, BaseModel, validator
 
+
 class CourseType(str, Enum):
     MECA = "meca"
     ELEC = "elec"
     INFO = "info"
     MATH = "math"
-    
 
 
 class CharbonBase(BaseModel):
@@ -102,3 +102,18 @@ class Exercise(ExerciseBase):
 
     class Config:
         orm_mode = True
+
+
+class UserBase(BaseModel):
+    username: str
+    email: str
+
+
+class UserCreate(UserBase):
+    pass
+
+
+class User(UserBase):
+    id: int
+    is_actionneur: bool
+    is_admin: bool
