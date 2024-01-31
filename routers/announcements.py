@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List
 
 from fastapi import APIRouter, Depends
@@ -10,10 +11,36 @@ from database import get_db
 router = APIRouter(prefix="/announcements")
 
 
+class SortOptions(str, Enum):
+    DATE_ASC = "date_asc"
+    DATE_DESC = "date_desc"
+    NAME_ASC = "name_asc"
+    NAME_DESC = "name_desc"
+
+    def get_sort_option(self):
+        options = {
+            SortOptions.DATE_ASC: models.Announcement.datetime.asc(),
+            SortOptions.DATE_DESC: models.Announcement.datetime.desc(),
+            SortOptions.NAME_ASC: models.Announcement.title.asc(),
+            SortOptions.NAME_DESC: models.Announcement.title.desc(),
+        }
+        return options.get(self, models.Announcement.datetime.desc())
+
+
 @router.get("/", response_model=List[schemas.Announcement])
-def get_announcements(db: Session = Depends(get_db)):
-    query = db.query(models.Announcement).all()
-    return query
+def get_announcements(
+    limit: int = 10,
+    offset: int = 0,
+    sort: SortOptions = SortOptions.DATE_DESC,
+    db: Session = Depends(get_db),
+):
+    query = (
+        db.query(models.Announcement)
+        .order_by(sort.get_sort_option())
+        .limit(limit)
+        .offset(offset)
+    )
+    return query.all()
 
 
 @router.get("/{id}", response_model=schemas.Announcement)

@@ -3,6 +3,8 @@ import urllib.parse
 import requests
 from isodate import parse_duration
 
+YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
+
 
 def extract_video_id_from_url(url: str) -> str:
     parsed_url = urllib.parse.urlparse(url)
@@ -27,7 +29,7 @@ def extract_video_id_from_url(url: str) -> str:
 def get_youtube_video_duration(video_id: str, api_key: str) -> int:
     payload = {"part": "contentDetails", "id": video_id, "key": api_key}
     response = requests.get(
-        "https://www.googleapis.com/youtube/v3/videos?part=contentDetails",
+        YOUTUBE_API_URL,
         params=payload,
     )
     response.raise_for_status()

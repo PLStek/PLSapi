@@ -1,6 +1,15 @@
+import base64
+from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import Base64Str, BaseModel
+
+
+class CourseType(str, Enum):
+    MECA = "meca"
+    ELEC = "elec"
+    INFO = "info"
+    MATH = "math"
 
 
 class CharbonBase(BaseModel):
@@ -8,7 +17,7 @@ class CharbonBase(BaseModel):
     description: str
     datetime: int
     course_id: str
-    replay_link: Optional[str]
+    replay_link: Optional[str] = None
     actionneurs: List[int]
 
 
@@ -18,8 +27,8 @@ class CharbonCreate(CharbonBase):
 
 class Charbon(CharbonBase):
     id: int
-    course_type: str
-    duration: Optional[int]
+    course_type: CourseType
+    duration: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -66,8 +75,51 @@ class ExerciseTopicCreate(ExerciseTopicBase):
 
 
 class ExerciseTopic(ExerciseTopicBase):
-    course_type: str
+    course_type: CourseType
     id: int
 
     class Config:
         orm_mode = True
+
+
+class ExerciseBase(BaseModel):
+    title: str
+    difficulty: int
+    is_corrected: bool
+    source: str
+    topic_id: int
+
+
+class ExerciseCreate(ExerciseBase):
+    content: Base64Str
+
+    pass
+
+
+class Exercise(ExerciseBase):
+    id: int
+    content: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class UserBase(BaseModel):
+    username: str
+    email: str
+
+
+class UserCreate(UserBase):
+    password: str
+    pass
+
+
+class User(UserBase):
+    id: int
+    is_actionneur: bool
+    is_admin: bool
+
+
+class UserLogin(BaseModel):
+    login: str
+    password: str
