@@ -1,8 +1,7 @@
-from enum import Enum
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 import models
 import schemas

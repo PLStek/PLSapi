@@ -2,7 +2,7 @@ import base64
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import Base64Str, BaseModel, validator
+from pydantic import Base64Str, BaseModel
 
 
 class CourseType(str, Enum):
@@ -17,7 +17,7 @@ class CharbonBase(BaseModel):
     description: str
     datetime: int
     course_id: str
-    replay_link: Optional[str]
+    replay_link: Optional[str] = None
     actionneurs: List[int]
 
 
@@ -28,7 +28,7 @@ class CharbonCreate(CharbonBase):
 class Charbon(CharbonBase):
     id: int
     course_type: CourseType
-    duration: Optional[int]
+    duration: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -117,3 +117,8 @@ class User(UserBase):
     id: int
     is_actionneur: bool
     is_admin: bool
+
+
+class UserLogin(BaseModel):
+    login: str
+    password: str

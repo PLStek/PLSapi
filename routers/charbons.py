@@ -133,7 +133,7 @@ def update_charbon(
             )
         new_charbon["duration"] = duration
     else:
-        new_charbon.duration = None
+        new_charbon["duration"] = None
 
     db.query(models.Charbon).filter_by(id=id).update(new_charbon)
     db.query(models.CharbonHost).filter_by(charbon_id=id).delete()

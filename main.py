@@ -6,6 +6,7 @@ from database import engine
 from routers import (
     actionneurs,
     announcements,
+    auth,
     charbons,
     courses,
     exercise_topics,
@@ -21,6 +22,7 @@ app.include_router(exercise_topics.router)
 app.include_router(courses.router)
 app.include_router(exercises.router)
 app.include_router(actionneurs.router)
+app.include_router(auth.router)
 
 origins = [
     "http://localhost:4200",
