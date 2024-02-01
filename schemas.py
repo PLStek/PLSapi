@@ -31,7 +31,7 @@ class Charbon(CharbonBase):
     duration: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CourseBase(BaseModel):
@@ -45,7 +45,7 @@ class CourseCreate(CourseBase):
 
 class Course(CourseBase):
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AnnouncementBase(BaseModel):
@@ -62,7 +62,7 @@ class Announcement(AnnouncementBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ExerciseTopicBase(BaseModel):
@@ -79,7 +79,7 @@ class ExerciseTopic(ExerciseTopicBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ExerciseBase(BaseModel):
@@ -101,7 +101,7 @@ class Exercise(ExerciseBase):
     content: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserBase(BaseModel):
@@ -119,7 +119,15 @@ class User(UserBase):
     is_actionneur: bool
     is_admin: bool
 
+    class Config:
+        from_attributes = True
+
 
 class UserLogin(BaseModel):
     login: str
     password: str
+
+
+class UserChangePassword(BaseModel):
+    password: str
+    new_password: str

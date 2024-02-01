@@ -52,3 +52,24 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@router.put("/change_password/{id}", response_model=schemas.User)
+def change_password(
+    id: int, body: schemas.UserChangePassword, db: Session = Depends(get_db)
+):
+    query = db.query(models.User).filter_by(id=id)
+    user = query.first()
+    if user is None:
+        raise HTTPException(status_code=400, detail="User doesn't exist")
+
+    if not bcrypt.checkpw(
+        body.password.encode("utf-8"), user.password_hash.encode("utf-8")
+    ):
+        raise HTTPException(status_code=400, detail="Invalid password")
+
+    password_hash = _hash_password(body.new_password)
+
+    query.update({"password_hash": password_hash})
+    db.commit()
+    return user
