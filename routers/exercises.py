@@ -1,6 +1,6 @@
 import base64
 import subprocess
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -27,8 +27,10 @@ def _compile_content(content: str) -> str:
 
 
 @router.get("/", response_model=List[schemas.Exercise])
-def get_exercises(db: Session = Depends(get_db)):
+def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(models.Exercise)
+    if topic_id:
+        query = query.filter_by(topic_id=topic_id)
     return query.all()
 
 
