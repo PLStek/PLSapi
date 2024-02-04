@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 import models
@@ -19,49 +20,69 @@ def _transform_et(et: models.ExerciseTopic) -> Dict[str, Any]:
 
 @router.get("/")
 def get_exercise_topics(db: Session = Depends(get_db)):
-    query = db.query(models.ExerciseTopic).options(
-        joinedload(models.ExerciseTopic.course)
-    )
-    return [_transform_et(et) for et in query.all()]
+    try:
+        query = db.query(models.ExerciseTopic).options(
+            joinedload(models.ExerciseTopic.course)
+        )
+        return [_transform_et(et) for et in query.all()]
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.get("/{id}")
 def get_exercise_topic(id: int, db: Session = Depends(get_db)):
-    query = (
-        db.query(models.ExerciseTopic)
-        .options(selectinload(models.ExerciseTopic.course))
-        .filter_by(id=id)
-    )
-    et = _transform_et(query.first())
-    if not et:
-        raise HTTPException(status_code=404, detail="Exercise topic not found")
-
-    return et
+    try:
+        query = (
+            db.query(models.ExerciseTopic)
+            .options(selectinload(models.ExerciseTopic.course))
+            .filter_by(id=id)
+        )
+        et = _transform_et(query.first())
+        if not et:
+            raise HTTPException(status_code=404, detail="Exercise topic not found")
+        return et
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.post("/", response_model=schemas.ExerciseTopic, status_code=201)
 def add_exercise_topic(et: schemas.ExerciseTopicCreate, db: Session = Depends(get_db)):
-    new_et = models.ExerciseTopic(**et.model_dump())
-    db.add(new_et)
-    db.commit()
-    db.refresh(new_et)
-
-    return get_exercise_topic(new_et.id, db)
+    try:
+        new_et = models.ExerciseTopic(**et.model_dump())
+        db.add(new_et)
+        db.commit()
+        db.refresh(new_et)
+        return get_exercise_topic(new_et.id, db)
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.put("/{id}")
 def update_exercise_topic(
     id: int, et: schemas.ExerciseTopicCreate, db: Session = Depends(get_db)
 ):
-    db.query(models.ExerciseTopic).filter_by(id=id).update(et.model_dump())
-    db.commit()
-
-    return get_exercise_topic(id, db)
+    try:
+        updated_rows = (
+            db.query(models.ExerciseTopic).filter_by(id=id).update(et.model_dump())
+        )
+        db.commit()
+        if updated_rows == 0:
+            raise HTTPException(status_code=404, detail="Exercise topic not found")
+        return get_exercise_topic(id, db)
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.delete("/{id}")
 def delete_exercise_topic(id: int, db: Session = Depends(get_db)):
-    db.query(models.ExerciseTopic).filter_by(id=id).delete()
-    db.commit()
-
-    return {}
+    try:
+        deleted_rows = db.query(models.ExerciseTopic).filter_by(id=id).delete()
+        db.commit()
+        if deleted_rows == 0:
+            raise HTTPException(status_code=404, detail="Exercise topic not found")
+        return {}
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")

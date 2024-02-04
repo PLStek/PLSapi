@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
@@ -12,5 +13,8 @@ router = APIRouter(prefix="/actionneurs")
 
 @router.get("/", response_model=List[schemas.User])
 def get_actionneurs(db: Session = Depends(get_db)):
-    query = db.query(models.User).filter(models.User.is_actionneur == True)
-    return query.all()
+    try:
+        query = db.query(models.User).filter(models.User.is_actionneur == True)
+        return query.all()
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")

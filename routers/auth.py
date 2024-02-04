@@ -1,5 +1,6 @@
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
@@ -15,61 +16,71 @@ def _hash_password(password: str) -> str:
 
 @router.post("/login", response_model=schemas.User)
 def login(login_info: schemas.UserLogin, db: Session = Depends(get_db)):
-    query = db.query(models.User).filter(
-        models.User.email == login_info.login
-        or models.User.username == login_info.login
-    )
-    user = query.first()
+    try:
+        query = db.query(models.User).filter(
+            models.User.email == login_info.login
+            or models.User.username == login_info.login
+        )
+        user = query.first()
 
-    if user is None:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        if user is None:
+            raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    if not bcrypt.checkpw(
-        login_info.password.encode("utf-8"), user.password_hash.encode("utf-8")
-    ):
-        raise HTTPException(status_code=400, detail="Invalid password")
+        if not bcrypt.checkpw(
+            login_info.password.encode("utf-8"), user.password_hash.encode("utf-8")
+        ):
+            raise HTTPException(status_code=400, detail="Invalid password")
 
-    return user
+        return user
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.post("/register", response_model=schemas.User)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    query = db.query(models.User).filter(
-        models.User.email == user.email or models.User.username == user.username
-    )
-    if query.first() is not None:
-        raise HTTPException(status_code=400, detail="User already exists")
+    try:
+        query = db.query(models.User).filter(
+            models.User.email == user.email or models.User.username == user.username
+        )
+        if query.first() is not None:
+            raise HTTPException(status_code=400, detail="User already exists")
 
-    user_dict = user.model_dump()
-    user_dict["password_hash"] = _hash_password(user.password)
-    user_dict["is_actionneur"] = False
-    user_dict["is_admin"] = False
-    del user_dict["password"]
+        user_dict = user.model_dump()
+        user_dict["password_hash"] = _hash_password(user.password)
+        user_dict["is_actionneur"] = False
+        user_dict["is_admin"] = False
+        del user_dict["password"]
 
-    new_user = models.User(**user_dict)
+        new_user = models.User(**user_dict)
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.put("/change_password/{id}", response_model=schemas.User)
 def change_password(
     id: int, body: schemas.UserChangePassword, db: Session = Depends(get_db)
 ):
-    query = db.query(models.User).filter_by(id=id)
-    user = query.first()
-    if user is None:
-        raise HTTPException(status_code=400, detail="User doesn't exist")
+    try:
+        query = db.query(models.User).filter_by(id=id)
+        user = query.first()
 
-    if not bcrypt.checkpw(
-        body.password.encode("utf-8"), user.password_hash.encode("utf-8")
-    ):
-        raise HTTPException(status_code=400, detail="Invalid password")
+        if user is None:
+            raise HTTPException(status_code=400, detail="User doesn't exist")
 
-    password_hash = _hash_password(body.new_password)
+        if not bcrypt.checkpw(
+            body.password.encode("utf-8"), user.password_hash.encode("utf-8")
+        ):
+            raise HTTPException(status_code=400, detail="Invalid password")
 
-    query.update({"password_hash": password_hash})
-    db.commit()
-    return user
+        password_hash = _hash_password(body.new_password)
+
+        query.update({"password_hash": password_hash})
+        db.commit()
+        return user
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")

@@ -2,7 +2,9 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.exc import NoResultFound
 
 import models
 import schemas
@@ -50,106 +52,132 @@ def get_charbons(
     max_date: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
-    query = (
-        db.query(models.Charbon)
-        .join(models.Course)
-        .options(
-            joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
+    try:
+        query = (
+            db.query(models.Charbon)
+            .join(models.Course)
+            .options(
+                joinedload(models.Charbon.actionneurs),
+                joinedload(models.Charbon.course),
+            )
+            .order_by(sort.get_sort_option())
         )
-        .order_by(sort.get_sort_option())
-    )
-    if course_type:
-        query = query.filter(models.Course.type == course_type)
-    if course:
-        query = query.filter(models.Charbon.course_id == course)
-    if min_date:
-        query = query.filter(models.Charbon.datetime >= min_date)
-    if max_date:
-        query = query.filter(models.Charbon.datetime <= max_date)
-    query = query.offset(offset).limit(limit)
+        if course_type:
+            query = query.filter(models.Course.type == course_type)
+        if course:
+            query = query.filter(models.Charbon.course_id == course)
+        if min_date:
+            query = query.filter(models.Charbon.datetime >= min_date)
+        if max_date:
+            query = query.filter(models.Charbon.datetime <= max_date)
+        query = query.offset(offset).limit(limit)
 
-    charbons = [_transform_charbon(charbon) for charbon in query.all()]
-    return charbons
+        charbons = [_transform_charbon(charbon) for charbon in query.all()]
+        return charbons
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.get("/{id}", response_model=schemas.Charbon)
 def get_charbon(id: int, db: Session = Depends(get_db)):
-    query = (
-        db.query(models.Charbon)
-        .options(
-            joinedload(models.Charbon.actionneurs), joinedload(models.Charbon.course)
+    try:
+        query = (
+            db.query(models.Charbon)
+            .options(
+                joinedload(models.Charbon.actionneurs),
+                joinedload(models.Charbon.course),
+            )
+            .filter_by(id=id)
         )
-        .filter_by(id=id)
-    )
-    charbon = _transform_charbon(query.first())
-    if not charbon:
+        charbon = _transform_charbon(query.one())
+        return charbon
+    except NoResultFound:
         raise HTTPException(status_code=404, detail="Charbon not found")
-
-    return charbon
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
 def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
-    charbon_dump = charbon.model_dump()
-    charbon_dump.pop("actionneurs")
-    new_charbon = models.Charbon(**charbon_dump)
+    try:
+        charbon_dump = charbon.model_dump()
+        charbon_dump.pop("actionneurs")
+        new_charbon = models.Charbon(**charbon_dump)
 
-    if charbon.replay_link:
-        video_id = extract_video_id_from_url(charbon.replay_link)
-        duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
-        if duration is None:
-            raise HTTPException(
-                status_code=400, detail="Could not extract duration from video"
-            )
-        new_charbon.duration = duration
-    else:
-        new_charbon.duration = None
+        if charbon.replay_link:
+            video_id = extract_video_id_from_url(charbon.replay_link)
+            duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
+            if duration is None:
+                raise HTTPException(
+                    status_code=400, detail="Could not extract duration from video"
+                )
+            new_charbon.duration = duration
+        else:
+            new_charbon.duration = None
 
-    db.add(new_charbon)
-    db.flush()
-    actionneurs = [
-        models.CharbonHost(charbon_id=new_charbon.id, actionneur_id=actionneur)
-        for actionneur in charbon.actionneurs
-    ]
-    db.add_all(actionneurs)
-    db.commit()
+        db.add(new_charbon)
+        db.flush()
+        actionneurs = [
+            models.CharbonHost(charbon_id=new_charbon.id, actionneur_id=actionneur)
+            for actionneur in charbon.actionneurs
+        ]
+        db.add_all(actionneurs)
+        db.commit()
 
-    return get_charbon(new_charbon.id, db)
+        return get_charbon(new_charbon.id, db)
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.put("/{id}", response_model=schemas.Charbon)
 def update_charbon(
     id: int, charbon: schemas.CharbonCreate, db: Session = Depends(get_db)
 ):
-    new_charbon = charbon.model_dump()
-    new_charbon.pop("actionneurs", None)
+    try:
+        new_charbon = charbon.model_dump()
+        new_charbon.pop("actionneurs", None)
 
-    if charbon.replay_link:
-        video_id = extract_video_id_from_url(charbon.replay_link)
-        duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
-        if duration is None:
-            raise HTTPException(
-                status_code=400, detail="Could not extract duration from video"
-            )
-        new_charbon["duration"] = duration
-    else:
-        new_charbon["duration"] = None
+        if charbon.replay_link:
+            video_id = extract_video_id_from_url(charbon.replay_link)
+            duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
+            if duration is None:
+                raise HTTPException(
+                    status_code=400, detail="Could not extract duration from video"
+                )
+            new_charbon["duration"] = duration
+        else:
+            new_charbon["duration"] = None
 
-    db.query(models.Charbon).filter_by(id=id).update(new_charbon)
-    db.query(models.CharbonHost).filter_by(charbon_id=id).delete()
-    actionneurs = [
-        models.CharbonHost(charbon_id=id, actionneur_id=actionneur)
-        for actionneur in charbon.actionneurs
-    ]
-    db.add_all(actionneurs)
-    db.commit()
+        updated_rows = db.query(models.Charbon).filter_by(id=id).update(new_charbon)
+        if updated_rows == 0:
+            raise HTTPException(status_code=404, detail="Charbon not found")
 
-    return get_charbon(id, db)
+        db.query(models.CharbonHost).filter_by(charbon_id=id).delete()
+        actionneurs = [
+            models.CharbonHost(charbon_id=id, actionneur_id=actionneur)
+            for actionneur in charbon.actionneurs
+        ]
+        db.add_all(actionneurs)
+        db.commit()
+
+        return get_charbon(id, db)
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
 
 @router.delete("/{id}")
 def delete_charbon(id: int, db: Session = Depends(get_db)):
-    db.query(models.Charbon).filter_by(id=id).delete()
-    db.commit()
+    try:
+        charbon = db.query(models.Charbon).filter_by(id=id).one()
+        db.delete(charbon)
+        db.commit()
+    except NoResultFound:
+        db.rollback()
+        raise HTTPException(status_code=404, detail="Charbon not found")
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
 
     return {}
