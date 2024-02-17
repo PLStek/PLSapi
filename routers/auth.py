@@ -1,10 +1,13 @@
 import bcrypt
+import jwt
+import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
 import schemas
+from config import settings
 from database import get_db
 
 router = APIRouter(prefix="/auth")
@@ -84,3 +87,16 @@ def change_password(
         return user
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.post("/discord")
+def discord_login(token: str, db: Session = Depends(get_db)):
+    data = {"Authorization": f"Bearer {token}"}
+    response = requests.get("https://discord.com/api/users/@me/guilds", headers=data)
+    res = response.json()
+    filtered_res = list(filter(lambda x: x["id"] == "887850769011839006", res))
+
+    if filtered_res:
+        payload = {"discord_token": token}
+        jwt_token = jwt.encode(payload, settings.secret_key, settings.algorithm)
+        return {"token": jwt_token}
