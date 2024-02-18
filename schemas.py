@@ -135,3 +135,7 @@ class UserChangePassword(BaseModel):
 class DiscordUser(BaseModel):
     id: int
     global_name: str
+
+
+class TokenCreate(BaseModel):
+    code: str

@@ -1,6 +1,7 @@
 from typing import Annotated
 
 import jwt
+import requests
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -11,6 +12,34 @@ from database import get_db
 
 # TODO: create custom flow for oauth2
 oauth2_scheme = OAuth2PasswordBearer("/auth/token", auto_error=False)
+
+
+def exchange_discord_code(code: str) -> str:
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": "http://localhost:4200/accueil",
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    response = requests.post(
+        "https://discord.com/api/v10/oauth2/token",
+        data=data,
+        headers=headers,
+        auth=(settings.discord_client_id, settings.discord_client_secret),
+    )
+    response.raise_for_status()
+    return response.json()["access_token"]
+
+
+def revoke_discord_token(token: str):
+    data = {"token": token, "token_type_hint": "access_token"}
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    requests.post(
+        "https://discord.com/api/v10/oauth2/token/revoke",
+        data=data,
+        headers=headers,
+        auth=(settings.discord_client_id, settings.discord_client_secret),
+    )
 
 
 def create_jwt(user_id: int) -> str:

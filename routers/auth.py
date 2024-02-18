@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import create_jwt, decode_jwt, get_current_user, oauth2_scheme
+from oauth import (
+    create_jwt,
+    decode_jwt,
+    exchange_discord_code,
+    get_current_user,
+    oauth2_scheme,
+    revoke_discord_token,
+)
 from utils import get_discord_user, get_discord_user_guilds
 
 SERVER_HUB_GUILD_ID = 887850769011839006
@@ -16,12 +23,13 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/token")
-def discord_login(token: str):
-    user_guilds: list[int] = get_discord_user_guilds(token)
+def discord_login(code: schemas.TokenCreate):
+    access_token = exchange_discord_code(code.code)
+    discord_user = get_discord_user(access_token)
+    user_guilds: list[int] = get_discord_user_guilds(access_token)
+    revoke_discord_token(access_token)
 
     if SERVER_HUB_GUILD_ID in user_guilds:
-        discord_user = get_discord_user(token)
-
         jwt_token = create_jwt(discord_user.id)
         return {"token": jwt_token}
     else:
