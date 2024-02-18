@@ -106,7 +106,6 @@ class Exercise(ExerciseBase):
 
 class UserBase(BaseModel):
     username: str
-    email: str
 
 
 class UserCreate(UserBase):
@@ -115,7 +114,6 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
-    id: int
     is_actionneur: bool
     is_admin: bool
 
@@ -131,3 +129,8 @@ class UserLogin(BaseModel):
 class UserChangePassword(BaseModel):
     password: str
     new_password: str
+
+
+class DiscordUser(BaseModel):
+    id: int
+    global_name: str

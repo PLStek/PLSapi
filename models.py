@@ -1,4 +1,13 @@
-from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, LargeBinary, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    Enum,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+)
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -62,6 +71,13 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
 
     charbons = relationship("CharbonHost", back_populates="actionneur")
+
+
+class Actionneur(Base):
+    __tablename__ = "actionneur"
+    id = Column(BigInteger, primary_key=True, autoincrement=False, nullable=False)
+    username = Column(String(50), nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)
 
 
 class Announcement(Base):

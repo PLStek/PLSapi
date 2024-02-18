@@ -1,9 +1,13 @@
 import urllib.parse
 
+import jwt
 import requests
 from isodate import parse_duration
 
+from schemas import DiscordUser
+
 YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3/videos"
+DISCORD_API_GUILDS_URL = "https://discord.com/api/users/@me/guilds"
 
 
 def extract_video_id_from_url(url: str) -> str:
@@ -35,3 +39,17 @@ def get_youtube_video_duration(video_id: str, api_key: str) -> int:
     response.raise_for_status()
     raw_date = response.json()["items"][0]["contentDetails"]["duration"]
     return parse_duration(raw_date).total_seconds()
+
+
+def get_discord_user_guilds(token: str) -> list[int]:
+    data = {"Authorization": f"Bearer {token}"}
+    response = requests.get(DISCORD_API_GUILDS_URL, headers=data)
+    guilds = response.json()
+    return [int(g["id"]) for g in guilds]
+
+
+def get_discord_user(token: str) -> DiscordUser:
+    data = {"Authorization": f"Bearer {token}"}
+    response = requests.get("https://discord.com/api/users/@me", headers=data)
+    response.raise_for_status()
+    return DiscordUser(**response.json())

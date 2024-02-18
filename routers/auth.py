@@ -1,14 +1,17 @@
+from typing import Annotated
+
 import bcrypt
-import jwt
-import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
 import schemas
-from config import settings
 from database import get_db
+from oauth import create_jwt, decode_jwt, oauth2_scheme
+from utils import get_discord_user, get_discord_user_guilds
+
+SERVER_HUB_GUILD_ID = 887850769011839006
 
 router = APIRouter(prefix="/auth")
 
@@ -89,14 +92,36 @@ def change_password(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.post("/discord")
+@router.post("/token")
 def discord_login(token: str, db: Session = Depends(get_db)):
-    data = {"Authorization": f"Bearer {token}"}
-    response = requests.get("https://discord.com/api/users/@me/guilds", headers=data)
-    res = response.json()
-    filtered_res = list(filter(lambda x: x["id"] == "887850769011839006", res))
+    user_guilds: list[int] = get_discord_user_guilds(token)
 
-    if filtered_res:
-        payload = {"discord_token": token}
-        jwt_token = jwt.encode(payload, settings.secret_key, settings.algorithm)
+    if SERVER_HUB_GUILD_ID in user_guilds:
+        discord_user = get_discord_user(token)
+
+        jwt_token = create_jwt(discord_user.id)
         return {"token": jwt_token}
+    else:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@router.get("/me", response_model=schemas.User)
+def get_user(
+    token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
+):
+    user_id = decode_jwt(token)
+    user_data = {
+        "username": None,
+        "is_actionneur": False,
+        "is_admin": False,
+    }
+
+    db_user = db.query(models.Actionneur).get(user_id)
+    if db_user:
+        user_data = {
+            "username": db_user.username,
+            "is_actionneur": True,
+            "is_admin": db_user.is_admin,
+        }
+
+    return user_data

@@ -24,6 +24,7 @@ app.include_router(exercises.router)
 app.include_router(actionneurs.router)
 app.include_router(auth.router)
 
+
 origins = [
     "http://localhost:4200",
 ]
