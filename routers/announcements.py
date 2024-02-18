@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -9,6 +9,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import models
 import schemas
 from database import get_db
+from oauth import get_current_actionneur
 
 router = APIRouter(prefix="/announcements")
 
@@ -61,7 +62,9 @@ def get_announcement(id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def add_announcement(
-    announcement: schemas.AnnouncementCreate, db: Session = Depends(get_db)
+    announcement: schemas.AnnouncementCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
 ):
     try:
         new_announcement = models.Announcement(**announcement.model_dump())
@@ -82,7 +85,10 @@ def add_announcement(
 
 @router.put("/{id}")
 def update_announcement(
-    id: int, announcement: schemas.AnnouncementCreate, db: Session = Depends(get_db)
+    id: int,
+    announcement: schemas.AnnouncementCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
 ):
     try:
         ann = db.query(models.Announcement).filter_by(id=id).one()
@@ -97,7 +103,11 @@ def update_announcement(
 
 
 @router.delete("/{id}")
-def delete_announcement(id: int, db: Session = Depends(get_db)):
+def delete_announcement(
+    id: int,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
     try:
         ann = db.query(models.Announcement).filter_by(id=id).one()
         db.delete(ann)

@@ -1,6 +1,6 @@
 import base64
 import subprocess
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
@@ -9,6 +9,14 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
+from oauth import (
+    decode_jwt,
+    get_current_actionneur,
+    get_current_admin,
+    get_current_user,
+    get_current_user_optional,
+    oauth2_scheme,
+)
 
 router = APIRouter(prefix="/exercises")
 
@@ -27,6 +35,7 @@ def _compile_content(content: str) -> str:
     return process.stdout.decode("utf-8")
 
 
+# TODO: dont request content from db
 @router.get("/", response_model=List[schemas.Exercise])
 def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db)):
     try:
@@ -39,12 +48,20 @@ def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db))
 
 
 @router.get("/{id}", response_model=schemas.Exercise)
-def get_exercise(id: int, db: Session = Depends(get_db)):
+def get_exercise(
+    id: int,
+    user: Annotated[int, Depends(get_current_user_optional)],
+    db: Session = Depends(get_db),
+):
     try:
-        query = db.query(models.Exercise).filter_by(id=id)
-        exercise = query.first()
+        exercise = db.query(models.Exercise).get(id)
         if not exercise:
             raise HTTPException(status_code=404, detail="Exercise not found")
+        if exercise.copyright and user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Unauthorized",
+            )
         return exercise
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
@@ -53,6 +70,7 @@ def get_exercise(id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=schemas.Exercise, status_code=status.HTTP_201_CREATED)
 def add_exercise(
     exercise: schemas.ExerciseCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
     db: Session = Depends(get_db),
 ):
     try:
@@ -72,6 +90,7 @@ def add_exercise(
 def update_exercise(
     id: int,
     exercise: schemas.ExerciseCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
     db: Session = Depends(get_db),
 ):
     try:

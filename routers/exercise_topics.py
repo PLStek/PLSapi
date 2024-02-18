@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Annotated, Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 import models
 import schemas
 from database import get_db
+from oauth import get_current_actionneur
 
 router = APIRouter(prefix="/exercise_topics")
 
@@ -46,7 +47,11 @@ def get_exercise_topic(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.ExerciseTopic, status_code=201)
-def add_exercise_topic(et: schemas.ExerciseTopicCreate, db: Session = Depends(get_db)):
+def add_exercise_topic(
+    et: schemas.ExerciseTopicCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
     try:
         new_et = models.ExerciseTopic(**et.model_dump())
         db.add(new_et)
@@ -60,7 +65,10 @@ def add_exercise_topic(et: schemas.ExerciseTopicCreate, db: Session = Depends(ge
 
 @router.put("/{id}")
 def update_exercise_topic(
-    id: int, et: schemas.ExerciseTopicCreate, db: Session = Depends(get_db)
+    id: int,
+    et: schemas.ExerciseTopicCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
 ):
     try:
         updated_rows = (
@@ -76,7 +84,11 @@ def update_exercise_topic(
 
 
 @router.delete("/{id}")
-def delete_exercise_topic(id: int, db: Session = Depends(get_db)):
+def delete_exercise_topic(
+    id: int,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
     try:
         deleted_rows = db.query(models.ExerciseTopic).filter_by(id=id).delete()
         db.commit()

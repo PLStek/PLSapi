@@ -1,12 +1,16 @@
+from typing import Annotated
+
 import jwt
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 import models
 from config import settings
+from database import get_db
 
 # TODO: create custom flow for oauth2
-oauth2_scheme = OAuth2PasswordBearer("/auth/token")
+oauth2_scheme = OAuth2PasswordBearer("/auth/token", auto_error=False)
 
 
 def create_jwt(user_id: int) -> str:
@@ -19,10 +23,34 @@ def decode_jwt(token: str) -> str:
     return payload["id"]
 
 
-def is_user_actionneur(db: Session, user_id: int) -> bool:
-    return db.query(models.Actionneur).get(user_id) is not None
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    try:
+        user_id = decode_jwt(token)
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        return user_id
+    except:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-def is_user_admin(db: Session, user_id: int) -> bool:
+async def get_current_user_optional(token: Annotated[str, Depends(oauth2_scheme)]):
+    try:
+        user_id = decode_jwt(token)
+        return user_id
+    except:
+        return None
+
+
+async def get_current_actionneur(
+    user_id: Annotated[int, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     user = db.query(models.Actionneur).get(user_id)
-    return user is not None and user.is_admin
+    if user is None:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return user
+
+
+async def get_current_admin(user_id: Annotated[int, Depends(get_current_actionneur)]):
+    if not user_id.is_admin:
+        raise HTTPException(status_code=403, detail="Forbidden")

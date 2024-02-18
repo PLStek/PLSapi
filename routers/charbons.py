@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
@@ -10,6 +10,7 @@ import models
 import schemas
 from config import settings
 from database import get_db
+from oauth import get_current_actionneur
 from utils import extract_video_id_from_url, get_youtube_video_duration
 
 router = APIRouter(prefix="/charbons")
@@ -98,7 +99,11 @@ def get_charbon(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
-def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
+def add_charbon(
+    charbon: schemas.CharbonCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
     try:
         charbon_dump = charbon.model_dump()
         charbon_dump.pop("actionneurs")
@@ -132,7 +137,10 @@ def add_charbon(charbon: schemas.CharbonCreate, db: Session = Depends(get_db)):
 
 @router.put("/{id}", response_model=schemas.Charbon)
 def update_charbon(
-    id: int, charbon: schemas.CharbonCreate, db: Session = Depends(get_db)
+    id: int,
+    charbon: schemas.CharbonCreate,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
 ):
     try:
         new_charbon = charbon.model_dump()
@@ -168,7 +176,11 @@ def update_charbon(
 
 
 @router.delete("/{id}")
-def delete_charbon(id: int, db: Session = Depends(get_db)):
+def delete_charbon(
+    id: int,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
     try:
         charbon = db.query(models.Charbon).filter_by(id=id).one()
         db.delete(charbon)

@@ -88,6 +88,7 @@ class ExerciseBase(BaseModel):
     is_corrected: bool
     source: str
     topic_id: int
+    copyright: bool
 
 
 class ExerciseCreate(ExerciseBase):
@@ -105,7 +106,7 @@ class Exercise(ExerciseBase):
 
 
 class UserBase(BaseModel):
-    username: str
+    username: Optional[str]
 
 
 class UserCreate(UserBase):

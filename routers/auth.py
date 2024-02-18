@@ -1,6 +1,5 @@
 from typing import Annotated
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -8,7 +7,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import create_jwt, decode_jwt, oauth2_scheme
+from oauth import create_jwt, decode_jwt, get_current_user, oauth2_scheme
 from utils import get_discord_user, get_discord_user_guilds
 
 SERVER_HUB_GUILD_ID = 887850769011839006
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/token")
-def discord_login(token: str, db: Session = Depends(get_db)):
+def discord_login(token: str):
     user_guilds: list[int] = get_discord_user_guilds(token)
 
     if SERVER_HUB_GUILD_ID in user_guilds:

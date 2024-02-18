@@ -50,27 +50,15 @@ class CharbonHost(Base):
         nullable=False,
     )
     actionneur_id = Column(
-        Integer,
-        ForeignKey("user.id", onupdate="CASCADE", ondelete="CASCADE"),
+        BigInteger,
+        ForeignKey("actionneur.id", onupdate="CASCADE", ondelete="CASCADE"),
         primary_key=True,
         index=True,
         nullable=False,
     )
 
     charbon = relationship("Charbon", back_populates="actionneurs")
-    actionneur = relationship("User", back_populates="charbons")
-
-
-class User(Base):
-    __tablename__ = "user"
-    id = Column(Integer, primary_key=True, nullable=False)
-    username = Column(String(100), nullable=False)
-    email = Column(String(100), nullable=False)
-    password_hash = Column(String(100), nullable=False)
-    is_actionneur = Column(Boolean, default=False, nullable=False)
-    is_admin = Column(Boolean, default=False, nullable=False)
-
-    charbons = relationship("CharbonHost", back_populates="actionneur")
+    actionneur = relationship("Actionneur", back_populates="charbons")
 
 
 class Actionneur(Base):
@@ -78,6 +66,8 @@ class Actionneur(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=False, nullable=False)
     username = Column(String(50), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
+
+    charbons = relationship("CharbonHost", back_populates="actionneur")
 
 
 class Announcement(Base):
@@ -112,6 +102,7 @@ class Exercise(Base):
         ForeignKey("exercise_topic.id", onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
     )
+    copyright = Column(Boolean, default=False, nullable=False)
     content = Column(LargeBinary, nullable=False)
 
     topic = relationship("ExerciseTopic", back_populates="exercises")

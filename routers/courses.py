@@ -1,4 +1,4 @@
-from typing import List
+from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
@@ -8,6 +8,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import models
 import schemas
 from database import get_db
+from oauth import get_current_admin
 
 router = APIRouter(prefix="/courses")
 
@@ -34,7 +35,11 @@ def get_course(id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.Course, status_code=status.HTTP_201_CREATED)
-def add_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
+def add_course(
+    course: schemas.CourseCreate,
+    admin: Annotated[models.Actionneur, Depends(get_current_admin)],
+    db: Session = Depends(get_db),
+):
     try:
         new_course = models.Course(**course.model_dump())
         db.add(new_course)
@@ -47,7 +52,12 @@ def add_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}", response_model=schemas.Course)
-def update_course(id: str, course: schemas.CourseCreate, db: Session = Depends(get_db)):
+def update_course(
+    id: str,
+    course: schemas.CourseCreate,
+    admin: Annotated[models.Actionneur, Depends(get_current_admin)],
+    db: Session = Depends(get_db),
+):
     try:
         updated_rows = (
             db.query(models.Course).filter_by(id=id).update(course.model_dump())
