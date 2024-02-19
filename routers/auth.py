@@ -35,7 +35,9 @@ def discord_login(code: schemas.TokenCreate):
         jwt_token = create_jwt(discord_user.id, exp_time)
         return {"token": jwt_token, "exp_time": exp_time}
     else:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(
+            status_code=401, detail="User isn't a member of the required guilds"
+        )
 
 
 @router.get("/me", response_model=schemas.User)
@@ -52,7 +54,7 @@ def get_user(
     db_user = db.query(models.Actionneur).get(user_id)
     if db_user:
         user_data = {
-            "username": user_id,
+            "id": user_id,
             "is_actionneur": True,
             "is_admin": db_user.is_admin,
         }

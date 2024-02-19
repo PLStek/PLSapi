@@ -34,9 +34,7 @@ class SortOptions(str, Enum):
 
 def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
     charbon_dict: Dict[str, Any] = charbon.__dict__
-    charbon_dict["actionneurs"] = [
-        actionneur.actionneur.id for actionneur in charbon.actionneurs
-    ]
+    charbon_dict["actionneurs"] = [a.actionneur.id for a in charbon.actionneurs]
     charbon_dict["course_type"] = charbon.course.type
     charbon_dict.pop("course", None)
     return charbon_dict
@@ -130,9 +128,9 @@ def add_charbon(
         db.commit()
 
         return get_charbon(new_charbon.id, db)
-    except DBAPIError:
+    except DBAPIError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
+        raise HTTPException(status_code=500, detail=f"Database error {e}")
 
 
 @router.put("/{id}", response_model=schemas.Charbon)

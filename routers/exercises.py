@@ -9,14 +9,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import (
-    decode_jwt,
-    get_current_actionneur,
-    get_current_admin,
-    get_current_user,
-    get_current_user_optional,
-    oauth2_scheme,
-)
+from oauth import get_current_actionneur, get_current_user_optional
 
 router = APIRouter(prefix="/exercises")
 

@@ -19,7 +19,7 @@ def exchange_discord_code(code: str) -> str:
     data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": "http://localhost:4200/accueil",
+        "redirect_uri": "http://localhost:4200/",
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     response = requests.post(

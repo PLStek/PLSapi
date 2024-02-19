@@ -15,8 +15,8 @@ router = APIRouter(prefix="/actionneurs")
 @router.get("/", response_model=List[schemas.Actionneur])
 def get_actionneurs(db: Session = Depends(get_db)):
     try:
-        query = db.query(models.Actionneur)
-        return query.all()
+        actionneurs = db.query(models.Actionneur).all()
+        return actionneurs
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
 

@@ -2,7 +2,7 @@ import base64
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import Base64Str, BaseModel
+from pydantic import Base64Str, BaseModel, validator
 
 
 class CourseType(str, Enum):
@@ -18,7 +18,11 @@ class CharbonBase(BaseModel):
     datetime: int
     course_id: str
     replay_link: Optional[str] = None
-    actionneurs: List[int]
+    actionneurs: List[str]
+
+    @validator("actionneurs", pre=True)
+    def actionneurs_to_str(cls, v):
+        return [str(a) for a in v] if isinstance(v, list) else v
 
 
 class CharbonCreate(CharbonBase):
@@ -105,12 +109,24 @@ class Exercise(ExerciseBase):
         from_attributes = True
 
 
-class Actionneur(BaseModel):
-    id: int
+class ActionneurCreate(BaseModel):
+    id: str
+    username: str
+
+    @validator("id", pre=True)
+    def id_to_str(cls, v):
+        return str(v) if isinstance(v, int) else v
+
+
+class Actionneur(ActionneurCreate):
+    is_admin: bool
+
+    class Config:
+        from_attributes = True
 
 
 class User(BaseModel):
-    id: int
+    id: str
     is_actionneur: bool
     is_admin: bool
 
@@ -118,18 +134,8 @@ class User(BaseModel):
         from_attributes = True
 
 
-class UserLogin(BaseModel):
-    login: str
-    password: str
-
-
-class UserChangePassword(BaseModel):
-    password: str
-    new_password: str
-
-
 class DiscordUser(BaseModel):
-    id: int
+    id: str
     global_name: str
 
 
