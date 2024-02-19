@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import get_current_actionneur, get_current_user_optional
+from oauth import get_current_actionneur, get_current_user
 
 router = APIRouter(prefix="/exercises")
 
@@ -43,7 +43,7 @@ def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db))
 @router.get("/{id}", response_model=schemas.Exercise)
 def get_exercise(
     id: int,
-    user: Annotated[int, Depends(get_current_user_optional)],
+    user: Annotated[int, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
     try:
@@ -53,7 +53,7 @@ def get_exercise(
         if exercise.copyright and user is None:
             raise HTTPException(
                 status_code=401,
-                detail="Unauthorized",
+                detail="You need a valid token to access this exercise",
             )
         return exercise
     except DBAPIError:

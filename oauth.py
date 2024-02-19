@@ -48,11 +48,11 @@ def create_jwt(user_id: int, exp_time: int) -> str:
     return jwt.encode(payload, settings.secret_key, settings.algorithm)
 
 
-def decode_jwt(token: str):
+def decode_jwt(token: str) -> int:
     try:
         payload = jwt.decode(token, settings.secret_key, settings.algorithm)
-        if payload["exp"] < time.time():
-            raise HTTPException(status_code=401, detail="Token expired")
+        if payload["exp"] < time.time() or not payload["id"]:
+            raise HTTPException(status_code=401, detail="Invalid token")
         return payload["id"]
     except:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -60,26 +60,16 @@ def decode_jwt(token: str):
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
-        user_id = decode_jwt(token)
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Unauthorized")
-        return user_id
-    except:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-
-async def get_current_user_optional(token: Annotated[str, Depends(oauth2_scheme)]):
-    try:
-        user_id = decode_jwt(token)
-        return user_id
+        return decode_jwt(token)
     except:
         return None
 
 
 async def get_current_actionneur(
-    user_id: Annotated[int, Depends(get_current_user)],
+    token: Annotated[int, Depends(oauth2_scheme)],
     db: Session = Depends(get_db),
 ):
+    user_id = decode_jwt(token)
     user = db.query(models.Actionneur).get(user_id)
     if user is None:
         raise HTTPException(status_code=403, detail="Forbidden")
