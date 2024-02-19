@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,18 +12,18 @@ from oauth import (
     create_jwt,
     decode_jwt,
     exchange_discord_code,
-    get_current_user,
     oauth2_scheme,
     revoke_discord_token,
 )
 from utils import get_discord_user, get_discord_user_guilds
 
+TOKEN_EXPIRATION_TIME = 3600 * 24
 SERVER_HUB_GUILD_ID = 887850769011839006
 
 router = APIRouter(prefix="/auth")
 
 
-@router.post("/token")
+@router.post("/token", response_model=schemas.TokenData)
 def discord_login(code: schemas.TokenCreate):
     access_token = exchange_discord_code(code.code)
     discord_user = get_discord_user(access_token)
@@ -30,8 +31,9 @@ def discord_login(code: schemas.TokenCreate):
     revoke_discord_token(access_token)
 
     if SERVER_HUB_GUILD_ID in user_guilds:
-        jwt_token = create_jwt(discord_user.id)
-        return {"token": jwt_token}
+        exp_time = int(time.time()) + TOKEN_EXPIRATION_TIME
+        jwt_token = create_jwt(discord_user.id, exp_time)
+        return {"token": jwt_token, "exp_time": exp_time}
     else:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -42,7 +44,7 @@ def get_user(
 ):
     user_id = decode_jwt(token)
     user_data = {
-        "username": None,
+        "id": user_id,
         "is_actionneur": False,
         "is_admin": False,
     }
@@ -50,7 +52,7 @@ def get_user(
     db_user = db.query(models.Actionneur).get(user_id)
     if db_user:
         user_data = {
-            "username": db_user.username,
+            "username": user_id,
             "is_actionneur": True,
             "is_admin": db_user.is_admin,
         }

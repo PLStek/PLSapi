@@ -105,16 +105,12 @@ class Exercise(ExerciseBase):
         from_attributes = True
 
 
-class UserBase(BaseModel):
-    username: Optional[str]
+class Actionneur(BaseModel):
+    id: int
 
 
-class UserCreate(UserBase):
-    password: str
-    pass
-
-
-class User(UserBase):
+class User(BaseModel):
+    id: int
     is_actionneur: bool
     is_admin: bool
 
@@ -139,3 +135,8 @@ class DiscordUser(BaseModel):
 
 class TokenCreate(BaseModel):
     code: str
+
+
+class TokenData(BaseModel):
+    token: str
+    exp_time: int

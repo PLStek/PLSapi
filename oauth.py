@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 import jwt
@@ -42,14 +43,19 @@ def revoke_discord_token(token: str):
     )
 
 
-def create_jwt(user_id: int) -> str:
-    payload = {"id": user_id}
+def create_jwt(user_id: int, exp_time: int) -> str:
+    payload = {"id": user_id, "exp": exp_time}
     return jwt.encode(payload, settings.secret_key, settings.algorithm)
 
 
-def decode_jwt(token: str) -> str:
-    payload = jwt.decode(token, settings.secret_key, settings.algorithm)
-    return payload["id"]
+def decode_jwt(token: str):
+    try:
+        payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+        if payload["exp"] < time.time():
+            raise HTTPException(status_code=401, detail="Token expired")
+        return payload["id"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):

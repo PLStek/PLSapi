@@ -12,10 +12,10 @@ from oauth import get_current_admin
 router = APIRouter(prefix="/actionneurs")
 
 
-@router.get("/", response_model=List[schemas.User])
+@router.get("/", response_model=List[schemas.Actionneur])
 def get_actionneurs(db: Session = Depends(get_db)):
     try:
-        query = db.query(models.User).filter(models.User.is_actionneur == True)
+        query = db.query(models.Actionneur)
         return query.all()
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
@@ -23,7 +23,7 @@ def get_actionneurs(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=schemas.User, status_code=201)
 def add_actionneur(
-    user: schemas.UserCreate,
+    user: schemas.Actionneur,
     admin: Annotated[models.Actionneur, Depends(get_current_admin)],
     db: Session = Depends(get_db),
 ):
