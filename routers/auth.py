@@ -24,8 +24,8 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/token", response_model=schemas.TokenData)
-def discord_login(code: schemas.TokenCreate):
-    access_token = exchange_discord_code(code.code)
+def discord_login(cred: schemas.TokenCreate):
+    access_token = exchange_discord_code(cred)
     discord_user = get_discord_user(access_token)
     user_guilds: list[int] = get_discord_user_guilds(access_token)
     revoke_discord_token(access_token)

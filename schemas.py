@@ -141,6 +141,7 @@ class DiscordUser(BaseModel):
 
 class TokenCreate(BaseModel):
     code: str
+    redirect_uri: str
 
 
 class TokenData(BaseModel):

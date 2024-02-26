@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 import models
+import schemas
 from config import settings
 from database import get_db
 
@@ -17,11 +18,11 @@ ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer("/auth/token", auto_error=False)
 
 
-def exchange_discord_code(code: str) -> str:
+def exchange_discord_code(cred: schemas.TokenCreate) -> str:
     data = {
         "grant_type": "authorization_code",
-        "code": code,
-        "redirect_uri": "http://localhost:4200/",
+        "code": cred.code,
+        "redirect_uri": cred.redirect_uri,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     response = requests.post(
