@@ -40,7 +40,7 @@ def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db))
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.get("/{id}", response_model=schemas.Exercise)
+@router.get("/{id}/", response_model=schemas.Exercise)
 def get_exercise(
     id: int,
     user: Annotated[int, Depends(get_current_user)],
@@ -79,7 +79,7 @@ def add_exercise(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.put("/{id}", response_model=schemas.Exercise)
+@router.put("/{id}/", response_model=schemas.Exercise)
 def update_exercise(
     id: int,
     exercise: schemas.ExerciseCreate,

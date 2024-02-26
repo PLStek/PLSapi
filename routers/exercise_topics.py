@@ -30,7 +30,7 @@ def get_exercise_topics(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.get("/{id}")
+@router.get("/{id}/")
 def get_exercise_topic(id: int, db: Session = Depends(get_db)):
     try:
         query = (
@@ -63,7 +63,7 @@ def add_exercise_topic(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.put("/{id}")
+@router.put("/{id}/")
 def update_exercise_topic(
     id: int,
     et: schemas.ExerciseTopicCreate,
@@ -83,7 +83,7 @@ def update_exercise_topic(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.delete("/{id}")
+@router.delete("/{id}/")
 def delete_exercise_topic(
     id: int,
     actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],

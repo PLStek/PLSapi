@@ -77,7 +77,7 @@ def get_charbons(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.get("/{id}", response_model=schemas.Charbon)
+@router.get("/{id}/", response_model=schemas.Charbon)
 def get_charbon(id: int, db: Session = Depends(get_db)):
     try:
         query = (
@@ -133,7 +133,7 @@ def add_charbon(
         raise HTTPException(status_code=500, detail=f"Database error {e}")
 
 
-@router.put("/{id}", response_model=schemas.Charbon)
+@router.put("/{id}/", response_model=schemas.Charbon)
 def update_charbon(
     id: int,
     charbon: schemas.CharbonCreate,
@@ -173,7 +173,7 @@ def update_charbon(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.delete("/{id}")
+@router.delete("/{id}/")
 def delete_charbon(
     id: int,
     actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],

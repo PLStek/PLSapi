@@ -23,7 +23,7 @@ SERVER_HUB_GUILD_ID = 887850769011839006
 router = APIRouter(prefix="/auth")
 
 
-@router.post("/token", response_model=schemas.TokenData)
+@router.post("/token/", response_model=schemas.TokenData)
 def discord_login(cred: schemas.TokenCreate):
     access_token = exchange_discord_code(cred)
     discord_user = get_discord_user(access_token)
@@ -40,7 +40,7 @@ def discord_login(cred: schemas.TokenCreate):
         )
 
 
-@router.get("/me", response_model=schemas.User)
+@router.get("/me/", response_model=schemas.User)
 def get_user(
     token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)
 ):

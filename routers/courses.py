@@ -22,7 +22,7 @@ def get_courses(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.get("/{id}", response_model=schemas.Course)
+@router.get("/{id}/", response_model=schemas.Course)
 def get_course(id: str, db: Session = Depends(get_db)):
     try:
         query = db.query(models.Course).filter_by(id=id)
@@ -51,7 +51,7 @@ def add_course(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.put("/{id}", response_model=schemas.Course)
+@router.put("/{id}/", response_model=schemas.Course)
 def update_course(
     id: str,
     course: schemas.CourseCreate,

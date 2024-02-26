@@ -49,7 +49,7 @@ def get_announcements(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.get("/{id}", response_model=schemas.Announcement)
+@router.get("/{id}/", response_model=schemas.Announcement)
 def get_announcement(id: int, db: Session = Depends(get_db)):
     try:
         query = db.query(models.Announcement).filter_by(id=id).one()
@@ -83,7 +83,7 @@ def add_announcement(
         raise HTTPException(status_code=500, detail="Database error")
 
 
-@router.put("/{id}")
+@router.put("/{id}/")
 def update_announcement(
     id: int,
     announcement: schemas.AnnouncementCreate,
@@ -102,7 +102,7 @@ def update_announcement(
     return get_announcement(id, db)
 
 
-@router.delete("/{id}")
+@router.delete("/{id}/")
 def delete_announcement(
     id: int,
     actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
