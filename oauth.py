@@ -11,6 +11,8 @@ import models
 from config import settings
 from database import get_db
 
+ALGORITHM = "HS256"
+
 # TODO: create custom flow for oauth2
 oauth2_scheme = OAuth2PasswordBearer("/auth/token", auto_error=False)
 
@@ -45,12 +47,12 @@ def revoke_discord_token(token: str):
 
 def create_jwt(user_id: int, exp_time: int) -> str:
     payload = {"id": user_id, "exp": exp_time}
-    return jwt.encode(payload, settings.secret_key, settings.algorithm)
+    return jwt.encode(payload, settings.token_secret, ALGORITHM)
 
 
 def decode_jwt(token: str) -> int:
     try:
-        payload = jwt.decode(token, settings.secret_key, settings.algorithm)
+        payload = jwt.decode(token, settings.token_secret, ALGORITHM)
         if payload["exp"] < time.time() or not payload["id"]:
             raise HTTPException(status_code=401, detail="Invalid token")
         return payload["id"]
