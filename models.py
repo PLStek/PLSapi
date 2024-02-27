@@ -27,7 +27,9 @@ class Charbon(Base):
     duration = Column(Integer)
     replay_link = Column(String(100))
 
-    actionneurs = relationship("CharbonHost", back_populates="charbon")
+    actionneurs = relationship(
+        "CharbonHost", back_populates="charbon", cascade="all, delete"
+    )
     course = relationship("Course", back_populates="charbons")
 
 
