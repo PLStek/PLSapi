@@ -2,6 +2,7 @@ import base64
 import subprocess
 from typing import Annotated, List, Optional
 
+from discord_auth import get_current_actionneur, get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -9,7 +10,6 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import get_current_actionneur, get_current_user
 
 router = APIRouter(prefix="/exercises")
 

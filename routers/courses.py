@@ -1,5 +1,6 @@
 from typing import Annotated, List
 
+from discord_auth import get_current_admin
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -8,7 +9,6 @@ from sqlalchemy.orm.exc import NoResultFound
 import models
 import schemas
 from database import get_db
-from oauth import get_current_admin
 
 router = APIRouter(prefix="/courses")
 

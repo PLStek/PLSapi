@@ -1,5 +1,6 @@
 from typing import Annotated, List
 
+from discord_auth import get_current_admin
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -7,7 +8,6 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from oauth import get_current_admin
 
 router = APIRouter(prefix="/actionneurs")
 

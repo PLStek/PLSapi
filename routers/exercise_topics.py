@@ -1,5 +1,6 @@
 from typing import Annotated, Any, Dict, List
 
+from discord_auth import get_current_actionneur
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -7,7 +8,6 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 import models
 import schemas
 from database import get_db
-from oauth import get_current_actionneur
 
 router = APIRouter(prefix="/exercise_topics")
 

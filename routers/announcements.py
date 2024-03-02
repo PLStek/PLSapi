@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Annotated, List
 
+from discord_auth import get_current_actionneur
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
@@ -9,7 +10,6 @@ from sqlalchemy.orm.exc import NoResultFound
 import models
 import schemas
 from database import get_db
-from oauth import get_current_actionneur
 
 router = APIRouter(prefix="/announcements")
 

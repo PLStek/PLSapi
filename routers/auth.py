@@ -2,13 +2,15 @@ import time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
 import schemas
+from config import settings
 from database import get_db
-from oauth import (
+from discord_auth import (
     create_jwt,
     decode_jwt,
     exchange_discord_code,
@@ -60,3 +62,10 @@ def get_user(
         }
 
     return user_data
+
+
+@router.get("/authorize/")
+def redirect(redirect_uri: str):
+    auth_uri = f"https://discord.com/oauth2/authorize?client_id={settings.discord_client_id}&response_type=code&redirect_uri={redirect_uri}&scope=identify+guilds"
+
+    return RedirectResponse(url=auth_uri)

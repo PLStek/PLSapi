@@ -1,6 +1,5 @@
 import urllib.parse
 
-import jwt
 import requests
 from isodate import parse_duration
 

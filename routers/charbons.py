@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional
 
+from discord_auth import get_current_actionneur
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
@@ -10,7 +11,6 @@ import models
 import schemas
 from config import settings
 from database import get_db
-from oauth import get_current_actionneur
 from utils import extract_video_id_from_url, get_youtube_video_duration
 
 router = APIRouter(prefix="/charbons")

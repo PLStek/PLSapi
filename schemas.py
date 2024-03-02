@@ -1,4 +1,3 @@
-import base64
 from enum import Enum
 from typing import List, Optional
 
