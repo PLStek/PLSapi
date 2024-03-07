@@ -10,7 +10,7 @@ import models
 import schemas
 from database import get_db
 
-router = APIRouter(prefix="/courses")
+router = APIRouter(prefix="/courses", tags=["Courses"])
 
 
 @router.get("/", response_model=List[schemas.Course])

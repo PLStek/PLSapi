@@ -9,7 +9,7 @@ import models
 import schemas
 from database import get_db
 
-router = APIRouter(prefix="/exercise_topics")
+router = APIRouter(prefix="/exercise_topics", tags=["Exercise topics"])
 
 
 def _transform_et(et: models.ExerciseTopic) -> Dict[str, Any]:

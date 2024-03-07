@@ -11,7 +11,7 @@ import models
 import schemas
 from database import get_db
 
-router = APIRouter(prefix="/exercises")
+router = APIRouter(prefix="/exercises", tags=["Exercises"])
 
 COMPILER_COMMAND = ["python3", "compile_plsmarkdown.py"]
 COMPILER_DIRECTORY = "compiler"

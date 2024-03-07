@@ -11,7 +11,7 @@ import models
 import schemas
 from database import get_db
 
-router = APIRouter(prefix="/announcements")
+router = APIRouter(prefix="/announcements", tags=["Announcements"])
 
 
 class SortOptions(str, Enum):
