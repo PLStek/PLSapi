@@ -120,7 +120,7 @@ def update_exercise(
         db.commit()
         if updated_rows == 0:
             raise HTTPException(status_code=404, detail="Exercise not found")
-        return get_exercise(id, actionneur.id, db)
+        return get_exercise(id, db)
     except DBAPIError:
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error")
