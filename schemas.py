@@ -102,7 +102,6 @@ class ExerciseCreate(ExerciseBase):
 
 class Exercise(ExerciseBase):
     id: int
-    content: Optional[str]
 
     class Config:
         from_attributes = True

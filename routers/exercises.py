@@ -1,15 +1,17 @@
 import base64
 import subprocess
+from io import StringIO
 from typing import Annotated, List, Optional
 
-from discord_auth import get_current_actionneur, get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 import models
 import schemas
 from database import get_db
+from discord_auth import get_current_actionneur, get_current_user
 
 router = APIRouter(prefix="/exercises", tags=["Exercises"])
 
@@ -43,6 +45,20 @@ def get_exercises(topic_id: Optional[int] = None, db: Session = Depends(get_db))
 @router.get("/{id}/", response_model=schemas.Exercise)
 def get_exercise(
     id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        exercise = db.query(models.Exercise).get(id)
+        if not exercise:
+            raise HTTPException(status_code=404, detail="Exercise not found")
+        return exercise
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.get("/{id}/content/")
+def get_exercise_content(
+    id: int,
     user: Annotated[int, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
@@ -55,7 +71,15 @@ def get_exercise(
                 status_code=401,
                 detail="You need a valid token to access this exercise",
             )
-        return exercise
+
+        content = base64.b64decode(exercise.content).decode("utf-8")
+        headers = {
+            "Content-Disposition": f"attachment; filename=exercise_{id}.html",
+        }
+
+        return StreamingResponse(
+            StringIO(content), media_type="text/plain", headers=headers
+        )
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
 
