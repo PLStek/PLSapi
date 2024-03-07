@@ -22,7 +22,7 @@ from utils import get_discord_user, get_discord_user_guilds
 TOKEN_EXPIRATION_TIME = 3600 * 24
 SERVER_HUB_GUILD_ID = 887850769011839006
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/token/", response_model=schemas.TokenData)
@@ -60,7 +60,6 @@ def get_user(
             "is_actionneur": True,
             "is_admin": db_user.is_admin,
         }
-
     return user_data
 
 
