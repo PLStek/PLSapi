@@ -1,5 +1,10 @@
 # PLSres API
 
+![GitHub](https://img.shields.io/github/license/PLStek/PLSapi)
+![GitHub repo size](https://img.shields.io/github/repo-size/PLStek/PLSapi)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/PLStek/PLSapi)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/PLStek/PLSapi)
+
 This is a FastAPi backend for the PLSres Angular app. It allows the centralization of teaching resources linked to the PL$tek project.
 
 ## Prerequisites
