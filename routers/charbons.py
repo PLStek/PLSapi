@@ -1,7 +1,8 @@
+import os
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -191,3 +192,19 @@ def delete_charbon(
         raise HTTPException(status_code=500, detail="Database error")
 
     return {}
+
+
+# File addition endpoint
+@router.post("/{id}/content/", status_code=status.HTTP_201_CREATED)
+def add_file_to_charbon(
+    id: int,
+    file: UploadFile,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    if not os.path.exists(settings.storage_path):
+        os.makedirs(settings.storage_path)
+
+    file_path = f"{settings.storage_path}/{file.filename}"
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())

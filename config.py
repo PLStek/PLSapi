@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     token_secret: str
     discord_client_id: str
     discord_client_secret: str
+    storage_path: str
 
     class Config:
         env_file = ".env"
