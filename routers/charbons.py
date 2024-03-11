@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -15,6 +16,8 @@ from discord_auth import get_current_actionneur
 from utils import extract_video_id_from_url, get_youtube_video_duration
 
 router = APIRouter(prefix="/charbons", tags=["Charbons"])
+
+STORAGE_PATH = os.path.join(settings.storage_path, "charbons")
 
 
 class SortOptions(str, Enum):
@@ -39,6 +42,10 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
     charbon_dict["course_type"] = charbon.course.type
     charbon_dict.pop("course", None)
     return charbon_dict
+
+
+def _get_file_name(charbon: models.Charbon) -> str:
+    return f"[{charbon.course_id}] {charbon.title}.zip"
 
 
 @router.get("/", response_model=List[schemas.Charbon])
@@ -97,6 +104,25 @@ def get_charbon(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Database error")
 
 
+@router.get("/{id}/content/")
+def get_content(id: int, db: Session = Depends(get_db)):
+    try:
+        charbon = db.query(models.Charbon).get(id)
+        if not charbon:
+            raise HTTPException(status_code=404, detail="Charbon not found")
+
+        return FileResponse(
+            os.path.join(STORAGE_PATH, _get_file_name(charbon)),
+            media_type="application/zip",
+            filename=_get_file_name(charbon),
+        )
+
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
+    except PermissionError:
+        raise HTTPException(status_code=500, detail="Permission error")
+
+
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
 def add_charbon(
     charbon: schemas.CharbonCreate,
@@ -132,6 +158,38 @@ def add_charbon(
     except DBAPIError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error {e}")
+
+
+@router.post("/{id}/content/", status_code=status.HTTP_201_CREATED)
+def add_content(
+    id: int,
+    file: UploadFile,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    try:
+        charbon = db.query(models.Charbon).get(id)
+        if not charbon:
+            raise HTTPException(status_code=404, detail="Charbon not found")
+
+        if not os.path.exists(STORAGE_PATH):
+            os.makedirs(STORAGE_PATH)
+
+        extension = os.path.splitext(file.filename)[1]
+        if extension != ".zip":
+            raise HTTPException(
+                status_code=400, detail="Invalid file type. Please upload a zip file."
+            )
+
+        with open(os.path.join(STORAGE_PATH, _get_file_name(charbon)), "wb") as f:
+            f.write(file.file.read())
+
+        return {}
+
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
+    except PermissionError:
+        raise HTTPException(status_code=500, detail="Permission error")
 
 
 @router.put("/{id}/", response_model=schemas.Charbon)
@@ -192,19 +250,3 @@ def delete_charbon(
         raise HTTPException(status_code=500, detail="Database error")
 
     return {}
-
-
-# File addition endpoint
-@router.post("/{id}/content/", status_code=status.HTTP_201_CREATED)
-def add_file_to_charbon(
-    id: int,
-    file: UploadFile,
-    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
-    db: Session = Depends(get_db),
-):
-    if not os.path.exists(settings.storage_path):
-        os.makedirs(settings.storage_path)
-
-    file_path = f"{settings.storage_path}/{file.filename}"
-    with open(file_path, "wb") as f:
-        f.write(file.file.read())

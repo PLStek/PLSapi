@@ -2,3 +2,6 @@ __pycache__
 .env
 .pytest_cache
 venv
+
+charbons
+exercises
