@@ -45,7 +45,7 @@ def _transform_charbon(charbon: models.Charbon) -> Dict[str, Any]:
 
 
 def _get_file_name(charbon: models.Charbon) -> str:
-    return f"[{charbon.course_id}] {charbon.title}.zip"
+    return f"charbon_{charbon.id}.zip"
 
 
 @router.get("/", response_model=List[schemas.Charbon])
@@ -111,8 +111,13 @@ def get_content(id: int, db: Session = Depends(get_db)):
         if not charbon:
             raise HTTPException(status_code=404, detail="Charbon not found")
 
+        path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+
+        if not os.path.exists(path):
+            raise HTTPException(status_code=404, detail="File not found")
+
         return FileResponse(
-            os.path.join(STORAGE_PATH, _get_file_name(charbon)),
+            os.path.join(path),
             media_type="application/zip",
             filename=_get_file_name(charbon),
         )
@@ -120,7 +125,7 @@ def get_content(id: int, db: Session = Depends(get_db)):
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
     except PermissionError:
-        raise HTTPException(status_code=500, detail="Permission error")
+        raise HTTPException(status_code=500, detail="API error")
 
 
 @router.post("/", response_model=schemas.Charbon, status_code=status.HTTP_201_CREATED)
@@ -189,7 +194,7 @@ def add_content(
     except DBAPIError:
         raise HTTPException(status_code=500, detail="Database error")
     except PermissionError:
-        raise HTTPException(status_code=500, detail="Permission error")
+        raise HTTPException(status_code=500, detail="API Error")
 
 
 @router.put("/{id}/", response_model=schemas.Charbon)
