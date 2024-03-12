@@ -254,6 +254,35 @@ def update_charbon(
         raise HTTPException(status_code=500, detail="Database error")
 
 
+@router.put("/{id}/content/", status_code=status.HTTP_201_CREATED)
+def update_content(
+    id: int,
+    file: UploadFile,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    try:
+        charbon = db.query(models.Charbon).get(id)
+        if not charbon:
+            raise HTTPException(status_code=404, detail="Charbon not found")
+
+        full_path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+        if not os.path.exists(full_path):
+            raise HTTPException(
+                status_code=404, detail="File not found. Please create it first."
+            )
+
+        with open(full_path, "wb") as f:
+            f.write(file.file.read())
+
+        return {}
+
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
+    except PermissionError:
+        raise HTTPException(status_code=500, detail="API Error")
+
+
 @router.delete("/{id}/")
 def delete_charbon(
     id: int,
