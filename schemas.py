@@ -32,6 +32,7 @@ class Charbon(CharbonBase):
     id: int
     course_type: CourseType
     duration: Optional[int] = None
+    resources: bool
 
     class Config:
         from_attributes = True

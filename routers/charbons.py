@@ -2,7 +2,7 @@ import os
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
@@ -12,7 +12,7 @@ import models
 import schemas
 from config import settings
 from database import get_db
-from discord_auth import get_current_actionneur
+from discord_auth import get_current_actionneur, get_current_user
 from utils import extract_video_id_from_url, get_youtube_video_duration
 
 router = APIRouter(prefix="/charbons", tags=["Charbons"])
@@ -105,12 +105,22 @@ def get_charbon(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{id}/content/")
-def get_content(id: int, db: Session = Depends(get_db)):
+def get_content(
+    id: int,
+    user: Annotated[int, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+):
     try:
         charbon = db.query(models.Charbon).get(id)
         if not charbon:
             raise HTTPException(status_code=404, detail="Charbon not found")
 
+        # TODO: Only if charbon is copyrighted
+        if user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="You need a valid token to access this exercise",
+            )
         path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
 
         if not os.path.exists(path):
@@ -141,8 +151,10 @@ def add_charbon(
 
         if charbon.replay_link:
             video_id = extract_video_id_from_url(charbon.replay_link)
+            if not video_id:
+                raise HTTPException(status_code=400, detail="Invalid youtube link")
             duration = get_youtube_video_duration(video_id, settings.youtube_api_key)
-            if duration is None:
+            if not duration:
                 raise HTTPException(
                     status_code=400, detail="Could not extract duration from video"
                 )
@@ -177,8 +189,11 @@ def add_content(
         if not charbon:
             raise HTTPException(status_code=404, detail="Charbon not found")
 
-        if not os.path.exists(STORAGE_PATH):
-            os.makedirs(STORAGE_PATH)
+        full_path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+        if os.path.exists(full_path):
+            raise HTTPException(
+                status_code=400, detail="File already exists. Please delete it first."
+            )
 
         extension = os.path.splitext(file.filename)[1]
         if extension != ".zip":
@@ -186,8 +201,13 @@ def add_content(
                 status_code=400, detail="Invalid file type. Please upload a zip file."
             )
 
-        with open(os.path.join(STORAGE_PATH, _get_file_name(charbon)), "wb") as f:
+        if not os.path.exists(STORAGE_PATH):
+            os.makedirs(STORAGE_PATH)
+        with open(full_path, "wb") as f:
             f.write(file.file.read())
+
+        charbon.resources = True
+        db.commit()
 
         return {}
 
@@ -237,6 +257,35 @@ def update_charbon(
         raise HTTPException(status_code=500, detail="Database error")
 
 
+@router.put("/{id}/content/", status_code=status.HTTP_201_CREATED)
+def update_content(
+    id: int,
+    file: UploadFile,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    try:
+        charbon = db.query(models.Charbon).get(id)
+        if not charbon:
+            raise HTTPException(status_code=404, detail="Charbon not found")
+
+        full_path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+        if not os.path.exists(full_path):
+            raise HTTPException(
+                status_code=404, detail="File not found. Please create it first."
+            )
+
+        with open(full_path, "wb") as f:
+            f.write(file.file.read())
+
+        return {}
+
+    except DBAPIError:
+        raise HTTPException(status_code=500, detail="Database error")
+    except PermissionError:
+        raise HTTPException(status_code=500, detail="API Error")
+
+
 @router.delete("/{id}/")
 def delete_charbon(
     id: int,
@@ -247,6 +296,31 @@ def delete_charbon(
         charbon = db.query(models.Charbon).filter_by(id=id).one()
         db.delete(charbon)
         db.commit()
+    except NoResultFound:
+        db.rollback()
+        raise HTTPException(status_code=404, detail="Charbon not found")
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
+
+    return {}
+
+
+@router.delete("/{id}/content/")
+def delete_content(
+    id: int,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    try:
+        charbon = db.query(models.Charbon).filter_by(id=id).one()
+        full_path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+        if os.path.exists(full_path):
+            os.remove(full_path)
+            charbon.resources = False
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Content not found")
     except NoResultFound:
         db.rollback()
         raise HTTPException(status_code=404, detail="Charbon not found")
