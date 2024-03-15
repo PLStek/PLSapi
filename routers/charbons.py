@@ -2,7 +2,7 @@ import os
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, joinedload
@@ -206,6 +206,9 @@ def add_content(
         with open(full_path, "wb") as f:
             f.write(file.file.read())
 
+        charbon.resources = True
+        db.commit()
+
         return {}
 
     except DBAPIError:
@@ -293,6 +296,31 @@ def delete_charbon(
         charbon = db.query(models.Charbon).filter_by(id=id).one()
         db.delete(charbon)
         db.commit()
+    except NoResultFound:
+        db.rollback()
+        raise HTTPException(status_code=404, detail="Charbon not found")
+    except DBAPIError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
+
+    return {}
+
+
+@router.delete("/{id}/content/")
+def delete_content(
+    id: int,
+    actionneur: Annotated[models.Actionneur, Depends(get_current_actionneur)],
+    db: Session = Depends(get_db),
+):
+    try:
+        charbon = db.query(models.Charbon).filter_by(id=id).one()
+        full_path = os.path.join(STORAGE_PATH, _get_file_name(charbon))
+        if os.path.exists(full_path):
+            os.remove(full_path)
+            charbon.resources = False
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Content not found")
     except NoResultFound:
         db.rollback()
         raise HTTPException(status_code=404, detail="Charbon not found")

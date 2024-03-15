@@ -26,6 +26,7 @@ class Charbon(Base):
     )
     duration = Column(Integer)
     replay_link = Column(String(100))
+    resources = Column(Boolean, default=False)
 
     actionneurs = relationship(
         "CharbonHost", back_populates="charbon", cascade="all, delete"
