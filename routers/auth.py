@@ -13,6 +13,7 @@ from discord_auth import (
     create_jwt,
     decode_jwt,
     exchange_discord_code,
+    get_current_admin,
     oauth2_scheme,
     revoke_discord_token,
 )
@@ -39,6 +40,21 @@ def discord_login(cred: schemas.TokenCreate):
         raise HTTPException(
             status_code=401, detail="User isn't a member of the required guilds"
         )
+
+
+@router.post("/token/bot/{id}", response_model=schemas.TokenData)
+def discord_bot_login(
+    id: str,
+    admin: Annotated[models.Actionneur, Depends(get_current_admin)],
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.Actionneur).get(id)
+    if not user or not user.is_admin:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    exp_time = int(time.time()) + TOKEN_EXPIRATION_TIME
+    jwt_token = create_jwt(user.id, exp_time)
+    return {"token": jwt_token, "exp_time": exp_time}
 
 
 @router.get("/me/", response_model=schemas.User)

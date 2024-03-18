@@ -75,10 +75,16 @@ async def get_current_actionneur(
     user_id = decode_jwt(token)
     user = db.query(models.Actionneur).get(user_id)
     if user is None:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(
+            status_code=403, detail="You need to be an actionneur to access this."
+        )
     return user
 
 
-async def get_current_admin(user_id: Annotated[int, Depends(get_current_actionneur)]):
-    if not user_id.is_admin:
-        raise HTTPException(status_code=403, detail="Forbidden")
+async def get_current_admin(user: Annotated[int, Depends(get_current_actionneur)]):
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=403, detail="You need to be an admin to access this."
+        )
+
+    return user
