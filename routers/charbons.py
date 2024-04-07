@@ -50,7 +50,7 @@ def _get_file_name(charbon: models.Charbon) -> str:
 
 @router.get("/", response_model=List[schemas.Charbon])
 def get_charbons(
-    limit: int = 10,
+    limit: Optional[int] = None,
     offset: int = 0,
     course_type: Optional[schemas.CourseType] = None,
     course: str | None = None,
@@ -77,7 +77,9 @@ def get_charbons(
             query = query.filter(models.Charbon.datetime >= min_date)
         if max_date:
             query = query.filter(models.Charbon.datetime <= max_date)
-        query = query.offset(offset).limit(limit)
+        query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
 
         charbons = [_transform_charbon(charbon) for charbon in query.all()]
         return charbons
